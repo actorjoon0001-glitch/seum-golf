@@ -91,23 +91,14 @@ export default function TVScreen() {
 
   function handleStart() {
     const audio = audioRef.current
-    const finish = () => {
+    if (!audio) {
       broadcast.setLastAt(Date.now())
       setStarted(true)
+      return
     }
-    if (!audio) { finish(); return }
-    // 사용자 제스처로 오디오 잠금 해제 (음소거 재생→정지)
-    audio.muted = true
-    audio.play().then(() => {
-      audio.pause()
-      audio.currentTime = 0
-      audio.muted = false
-      finish()
-    }).catch(() => {
-      audio.muted = false
-      // 파일이 없거나 로드 실패 — 그래도 시작은 진행 (관리자 테스트로 점검)
-      finish()
-    })
+    // 사용자 제스처(클릭) 안에서 바로 재생 → 자동재생 정책 통과 + 즉시 소리 확인
+    setStarted(true)
+    playAnnouncement()
   }
 
   // 30분 스케줄러
@@ -257,7 +248,7 @@ export default function TVScreen() {
             <p>박람회 현장 안내방송을 30분마다 자동으로 재생합니다.<br/>
             브라우저 정책상 처음 1회 클릭이 필요합니다.</p>
             <button className="start-btn" onClick={handleStart}>방송 시작</button>
-            <p className="start-modal-hint">시작 후 30분 뒤 첫 방송이 송출됩니다.<br/>관리자 페이지에서 "지금 방송하기"로 즉시 송출도 가능합니다.</p>
+            <p className="start-modal-hint">버튼을 누르면 첫 방송이 즉시 송출되고,<br/>이후 30분마다 자동으로 반복됩니다.</p>
           </div>
         </div>
       )}
