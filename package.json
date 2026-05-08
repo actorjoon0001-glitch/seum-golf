@@ -1,0 +1,22 @@
+{
+  "name": "seum-golf-leaderboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "세움디자인하우징 복합 레저형 체류형쉼터 - 프로골퍼를 이겨라 실시간 이벤트 순위판",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
+  }
+}
