@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLongDriveBoard, insertLongDrive, clearLongDrive } from '../hooks/useLeaderboard.js'
 import { supabaseEnabled } from '../supabase.js'
+import { broadcast, AUDIO_URL, INTERVAL_MS } from '../broadcast.js'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'seum1234'
 
@@ -128,6 +129,117 @@ function TopBox() {
   )
 }
 
+function BroadcastPanel() {
+  const [enabled, setEnabled] = useState(broadcast.getEnabled())
+  const [volume, setVolume] = useState(broadcast.getVolume())
+  const [lastAt, setLastAt] = useState(broadcast.getLastAt())
+  const [now, setNow] = useState(Date.now())
+  const [status, setStatus] = useState(null)
+  const testAudioRef = useRef(null)
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setNow(Date.now())
+      setLastAt(broadcast.getLastAt())
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const off1 = broadcast.on('played', ({ at }) => setLastAt(Number(at) || 0))
+    const off2 = broadcast.on('enabled', ({ value }) => setEnabled(Boolean(value)))
+    const off3 = broadcast.on('volume', ({ value }) => setVolume(Number(value) || 0))
+    return () => { off1(); off2(); off3() }
+  }, [])
+
+  const next = lastAt > 0 ? lastAt + INTERVAL_MS : 0
+  const remainingMs = Math.max(0, next - now)
+  const remainMin = Math.floor(remainingMs / 60000)
+  const remainSec = Math.floor((remainingMs % 60000) / 1000)
+
+  function toggle(b) {
+    setEnabled(b)
+    broadcast.setEnabled(b)
+  }
+  function changeVolume(v) {
+    setVolume(v)
+    broadcast.setVolume(v)
+  }
+  function playNow() {
+    broadcast.triggerNow()
+    setStatus('TV에 송출 명령을 전송했습니다')
+    setTimeout(() => setStatus(null), 4000)
+  }
+  async function testPlay() {
+    setStatus(null)
+    try {
+      if (testAudioRef.current) {
+        testAudioRef.current.pause()
+        testAudioRef.current.currentTime = 0
+      }
+      const audio = new Audio(AUDIO_URL)
+      audio.volume = Math.max(0, Math.min(1, volume / 100))
+      testAudioRef.current = audio
+      const onEnded = () => setStatus('테스트 재생 완료')
+      const onError = () => setStatus('파일 로드 실패: public/audio/notice-golf.mp3 확인')
+      audio.addEventListener('ended', onEnded, { once: true })
+      audio.addEventListener('error', onError, { once: true })
+      await audio.play()
+      setStatus('테스트 재생 중 (이 기기에서만 들립니다)')
+    } catch (e) {
+      setStatus('재생 실패: ' + (e?.message || e))
+    }
+  }
+  function stopTest() {
+    if (testAudioRef.current) {
+      testAudioRef.current.pause()
+      testAudioRef.current.currentTime = 0
+    }
+    setStatus('테스트 정지')
+  }
+
+  return (
+    <div className="broadcast-panel">
+      <h2>🔊 안내방송</h2>
+      <p className="bp-desc">30분마다 자동 재생 · TV 화면에서 "방송 시작" 1회 클릭 필수</p>
+
+      <label className="toggle-row">
+        <span>안내방송 자동 재생</span>
+        <input type="checkbox" checked={enabled} onChange={(e) => toggle(e.target.checked)} />
+      </label>
+
+      <div className={`countdown ${enabled ? '' : 'off'}`}>
+        <div className="countdown-label">다음 안내방송까지</div>
+        <div className="countdown-value">
+          {!enabled
+            ? '자동 재생 OFF'
+            : lastAt > 0
+              ? remainingMs > 0
+                ? `${remainMin}분 ${String(remainSec).padStart(2, '0')}초 남음`
+                : '곧 송출 (TV에 명령 전달 중)'
+              : 'TV 화면에서 "방송 시작" 필요'}
+        </div>
+      </div>
+
+      <div className="bp-actions">
+        <button onClick={playNow}>📢 지금 방송하기</button>
+        <button className="secondary" onClick={testPlay}>🔉 테스트 재생</button>
+        <button className="secondary" onClick={stopTest}>■ 테스트 정지</button>
+      </div>
+
+      <label className="vol-row">
+        <div className="vol-row-head">
+          <span>볼륨</span>
+          <strong>{volume}%</strong>
+        </div>
+        <input type="range" min="0" max="100" value={volume} onChange={(e) => changeVolume(Number(e.target.value))} />
+      </label>
+
+      {status && <div className="bp-status">{status}</div>}
+    </div>
+  )
+}
+
 export default function Admin() {
   const [authed, setAuthed] = useState(false)
 
@@ -157,6 +269,7 @@ export default function Admin() {
         <LongDriveForm />
         <TopBox />
         <button className="danger" onClick={reset}>장거리 기록 초기화</button>
+        <BroadcastPanel />
       </div>
 
       <footer className="admin-footer">

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLongDriveBoard } from '../hooks/useLeaderboard.js'
+import { broadcast, AUDIO_URL, INTERVAL_MS } from '../broadcast.js'
 
 const MARQUEE_LINES = [
   '프로골퍼를 이겨라!',
@@ -24,6 +25,14 @@ export default function TVScreen() {
   const [marqueeIndex, setMarqueeIndex] = useState(0)
   const [now, setNow] = useState(new Date())
 
+  // === 안내방송 상태 ===
+  const [started, setStarted] = useState(false)
+  const [announcing, setAnnouncing] = useState(false)
+  const [audioError, setAudioError] = useState(null)
+  const audioRef = useRef(null)
+  const isPlayingRef = useRef(false)
+  const overlayTimerRef = useRef(null)
+
   useEffect(() => {
     const t = setInterval(() => setMarqueeIndex((i) => (i + 1) % MARQUEE_LINES.length), 12000)
     return () => clearInterval(t)
@@ -33,6 +42,105 @@ export default function TVScreen() {
     const t = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // 오디오 엘리먼트 한 번만 생성
+  useEffect(() => {
+    let audio
+    try {
+      audio = new Audio(AUDIO_URL)
+      audio.preload = 'auto'
+      audio.volume = Math.max(0, Math.min(1, broadcast.getVolume() / 100))
+    } catch (e) {
+      setAudioError('오디오 초기화 실패')
+      return
+    }
+    const onError = () => setAudioError('안내방송 mp3 파일을 찾을 수 없습니다 (public/audio/notice-golf.mp3)')
+    const onEnded = () => { isPlayingRef.current = false }
+    audio.addEventListener('error', onError)
+    audio.addEventListener('ended', onEnded)
+    audioRef.current = audio
+    return () => {
+      audio.removeEventListener('error', onError)
+      audio.removeEventListener('ended', onEnded)
+      try { audio.pause() } catch {}
+      audioRef.current = null
+    }
+  }, [])
+
+  const playAnnouncement = useCallback(async () => {
+    if (!broadcast.getEnabled()) return
+    if (isPlayingRef.current) return
+    const audio = audioRef.current
+    if (!audio) return
+    try {
+      audio.volume = Math.max(0, Math.min(1, broadcast.getVolume() / 100))
+      audio.currentTime = 0
+      isPlayingRef.current = true
+      setAnnouncing(true)
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current)
+      overlayTimerRef.current = setTimeout(() => setAnnouncing(false), 10000)
+      await audio.play()
+      broadcast.setLastAt(Date.now())
+      setAudioError(null)
+    } catch (e) {
+      isPlayingRef.current = false
+      setAnnouncing(false)
+      setAudioError('재생 실패: ' + (e?.message || e))
+    }
+  }, [])
+
+  function handleStart() {
+    const audio = audioRef.current
+    const finish = () => {
+      broadcast.setLastAt(Date.now())
+      setStarted(true)
+    }
+    if (!audio) { finish(); return }
+    // 사용자 제스처로 오디오 잠금 해제 (음소거 재생→정지)
+    audio.muted = true
+    audio.play().then(() => {
+      audio.pause()
+      audio.currentTime = 0
+      audio.muted = false
+      finish()
+    }).catch(() => {
+      audio.muted = false
+      // 파일이 없거나 로드 실패 — 그래도 시작은 진행 (관리자 테스트로 점검)
+      finish()
+    })
+  }
+
+  // 30분 스케줄러
+  useEffect(() => {
+    if (!started) return
+    const iv = setInterval(() => {
+      if (!broadcast.getEnabled()) return
+      if (isPlayingRef.current) return
+      const last = broadcast.getLastAt() || 0
+      if (last > 0 && Date.now() - last >= INTERVAL_MS) {
+        playAnnouncement()
+      }
+    }, 5000)
+    return () => clearInterval(iv)
+  }, [started, playAnnouncement])
+
+  // 다른 페이지/탭/디바이스에서 오는 명령 수신
+  useEffect(() => {
+    const off1 = broadcast.on('playNow', () => {
+      if (!started) {
+        setAudioError('TV 화면에서 "방송 시작"을 먼저 눌러주세요')
+        setTimeout(() => setAudioError(null), 6000)
+        return
+      }
+      playAnnouncement()
+    })
+    const off2 = broadcast.on('volume', ({ value }) => {
+      if (audioRef.current) {
+        audioRef.current.volume = Math.max(0, Math.min(1, (value ?? 100) / 100))
+      }
+    })
+    return () => { off1(); off2() }
+  }, [started, playAnnouncement])
 
   const isNew = ld.newRecordId && ld.top?.id === ld.newRecordId
 
@@ -139,6 +247,38 @@ export default function TVScreen() {
           <div className="sample-warn">샘플 데이터 표시 중 · Supabase 환경변수를 설정하세요</div>
         )}
       </footer>
+
+      {/* 안내방송 시작 모달 */}
+      {!started && (
+        <div className="start-modal" role="dialog" aria-modal="true">
+          <div className="start-modal-card">
+            <div className="start-modal-icon">🔊</div>
+            <h2>안내방송 시작</h2>
+            <p>박람회 현장 안내방송을 30분마다 자동으로 재생합니다.<br/>
+            브라우저 정책상 처음 1회 클릭이 필요합니다.</p>
+            <button className="start-btn" onClick={handleStart}>방송 시작</button>
+            <p className="start-modal-hint">시작 후 30분 뒤 첫 방송이 송출됩니다.<br/>관리자 페이지에서 "지금 방송하기"로 즉시 송출도 가능합니다.</p>
+          </div>
+        </div>
+      )}
+
+      {/* 안내방송 송출 중 오버레이 (10초) */}
+      {announcing && (
+        <div className="announcement-overlay" role="status" aria-live="polite">
+          <div className="announcement-card">
+            <div className="announcement-icon">📢</div>
+            <div className="announcement-title">세움디자인하우징 안내방송</div>
+            <div className="announcement-sub">프로골퍼를 이겨라 · 이벤트 안내 송출 중</div>
+            <div className="announcement-bars" aria-hidden>
+              <span/><span/><span/><span/><span/><span/><span/>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {audioError && (
+        <div className="audio-warn" role="alert">⚠ {audioError}</div>
+      )}
     </div>
   )
 }
