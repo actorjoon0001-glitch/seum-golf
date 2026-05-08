@@ -22,18 +22,20 @@ body {
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
 }
+body:has(.tv-root) { overflow: hidden; }
 button { font-family: inherit; }
 
 /* ============= TV SCREEN ============= */
 .tv-root {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
   background:
-    radial-gradient(1200px 700px at 50% -10%, rgba(212,175,55,0.16), transparent 60%),
-    radial-gradient(900px 500px at 100% 110%, rgba(212,175,55,0.10), transparent 60%),
+    radial-gradient(1400px 800px at 50% 0%, rgba(212,175,55,0.18), transparent 60%),
+    radial-gradient(1000px 600px at 100% 100%, rgba(212,175,55,0.12), transparent 60%),
     linear-gradient(180deg, #0a0907 0%, #050504 100%);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   padding: clamp(14px, 1.6vw, 32px);
   gap: clamp(12px, 1.4vw, 22px);
   overflow: hidden;
@@ -119,13 +121,13 @@ button { font-family: inherit; }
 
 /* Main split layout */
 .tv-main {
-  flex: 1;
   display: grid;
   gap: clamp(12px, 1.4vw, 24px);
   min-height: 0;
+  height: 100%;
 }
 .tv-main--split {
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
 }
 
 /* Cards (shared) */
@@ -140,6 +142,8 @@ button { font-family: inherit; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
+  min-height: 0;
   box-shadow:
     0 30px 80px rgba(0,0,0,0.55),
     inset 0 0 0 1px rgba(212,175,55,0.10);
@@ -212,7 +216,7 @@ button { font-family: inherit; }
 }
 
 .top-name {
-  font-size: clamp(36px, 4vw, 80px);
+  font-size: min(7vh, 5vw);
   font-weight: 800;
   color: #fff;
   margin-top: 4px;
@@ -224,7 +228,7 @@ button { font-family: inherit; }
   position: relative;
 }
 .top-value .num {
-  font-size: clamp(120px, 16vw, 280px);
+  font-size: min(28vh, 18vw);
   font-weight: 900;
   line-height: 0.92;
   background: linear-gradient(180deg, #fffbe5 0%, var(--gold-2) 35%, var(--gold) 65%, var(--gold-deep) 100%);
@@ -236,7 +240,7 @@ button { font-family: inherit; }
   font-variant-numeric: tabular-nums;
   position: relative;
 }
-.top-value .unit { font-size: clamp(32px, 3.5vw, 64px); color: var(--gold-2); font-weight: 800; }
+.top-value .unit { font-size: min(8vh, 5vw); color: var(--gold-2); font-weight: 800; }
 .record-meta { color: var(--muted); font-size: clamp(11px, 0.85vw, 14px); letter-spacing: 0.3em; margin-bottom: clamp(10px, 1.2vw, 18px); }
 
 .empty { color: var(--muted); font-size: clamp(20px, 2vw, 32px); padding: 24px 0; }
@@ -313,7 +317,7 @@ button { font-family: inherit; }
   letter-spacing: 0.4em;
 }
 .prize-name {
-  font-size: clamp(28px, 2.6vw, 44px);
+  font-size: min(5vh, 3vw);
   font-weight: 900;
   margin: 8px 0 12px;
   background: linear-gradient(180deg, #fff7d6, var(--gold));
@@ -323,7 +327,8 @@ button { font-family: inherit; }
 
 .prize-image {
   position: relative;
-  width: clamp(220px, 22vw, 360px);
+  width: min(34vh, 24vw);
+  max-width: 380px;
   margin: clamp(8px, 1vw, 18px) auto;
   filter: drop-shadow(0 30px 50px rgba(212,175,55,0.25));
 }
@@ -362,7 +367,7 @@ button { font-family: inherit; }
   font-weight: 700;
 }
 .prize-amount {
-  font-size: clamp(40px, 4.4vw, 84px);
+  font-size: min(8vh, 5vw);
   font-weight: 900;
   background: linear-gradient(180deg, #fffbe5, var(--gold) 60%, var(--gold-deep));
   -webkit-background-clip: text; background-clip: text; color: transparent;
