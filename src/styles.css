@@ -77,6 +77,16 @@ button { font-family: inherit; }
   gap: clamp(12px, 1.5vw, 28px);
   min-height: 0;
 }
+.tv-main--single {
+  grid-template-columns: minmax(0, 1100px);
+  justify-content: center;
+}
+.leader-card.hero .top-value .num {
+  font-size: clamp(120px, 18vw, 320px);
+}
+.leader-card.hero .top-name {
+  font-size: clamp(36px, 4vw, 80px);
+}
 
 .leader-card {
   position: relative;
@@ -277,6 +287,14 @@ button { font-family: inherit; }
   .admin-grid { grid-template-columns: 1fr 1fr; }
 }
 .admin-col { display: flex; flex-direction: column; gap: 12px; }
+
+.admin-single {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  max-width: 560px;
+}
 
 .record-form {
   background: var(--bg-2);

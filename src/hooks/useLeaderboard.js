@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { supabase, supabaseEnabled, TABLES, SAMPLE } from '../supabase.js'
+import { supabase, supabaseEnabled, LONG_DRIVE_TABLE, SAMPLE_LONG_DRIVE } from '../supabase.js'
 
-// 정렬: value 내림차순, created_at 오름차순(먼저 등록한 사람 우선)
-function sortRecords(rows, valueField) {
+// 정렬: 거리 내림차순, created_at 오름차순(먼저 등록한 사람 우선)
+function sortRecords(rows) {
   return [...rows].sort((a, b) => {
-    const diff = (b[valueField] ?? 0) - (a[valueField] ?? 0)
+    const diff = (b.distance ?? 0) - (a.distance ?? 0)
     if (diff !== 0) return diff
     const ta = new Date(a.created_at).getTime() || 0
     const tb = new Date(b.created_at).getTime() || 0
@@ -12,15 +12,11 @@ function sortRecords(rows, valueField) {
   })
 }
 
-export function useLeaderboard(kind) {
-  // kind: 'longDrive' | 'karaoke'
-  const table = TABLES[kind]
-  const valueField = kind === 'longDrive' ? 'distance' : 'score'
-
-  const [rows, setRows] = useState(() => sortRecords(SAMPLE[kind], valueField))
+export function useLongDriveBoard() {
+  const [rows, setRows] = useState(() => sortRecords(SAMPLE_LONG_DRIVE))
   const [usingSample, setUsingSample] = useState(!supabaseEnabled)
   const [newRecordId, setNewRecordId] = useState(null)
-  const lastTopRef = useRef(rows[0]?.[valueField] ?? -Infinity)
+  const lastTopRef = useRef(rows[0]?.distance ?? -Infinity)
 
   useEffect(() => {
     if (!supabaseEnabled) return
@@ -28,9 +24,9 @@ export function useLeaderboard(kind) {
 
     async function load() {
       const { data, error } = await supabase
-        .from(table)
+        .from(LONG_DRIVE_TABLE)
         .select('*')
-        .order(valueField, { ascending: false })
+        .order('distance', { ascending: false })
         .order('created_at', { ascending: true })
         .limit(50)
       if (cancelled) return
@@ -39,15 +35,15 @@ export function useLeaderboard(kind) {
         return
       }
       setUsingSample(false)
-      const sorted = sortRecords(data, valueField)
+      const sorted = sortRecords(data)
       setRows(sorted)
-      lastTopRef.current = sorted[0]?.[valueField] ?? -Infinity
+      lastTopRef.current = sorted[0]?.distance ?? -Infinity
     }
     load()
 
     const channel = supabase
-      .channel(`realtime-${table}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+      .channel(`realtime-${LONG_DRIVE_TABLE}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: LONG_DRIVE_TABLE }, (payload) => {
         setRows((prev) => {
           let next = prev
           if (payload.eventType === 'INSERT') {
@@ -57,8 +53,8 @@ export function useLeaderboard(kind) {
           } else if (payload.eventType === 'DELETE') {
             next = prev.filter((r) => r.id !== payload.old.id)
           }
-          const sorted = sortRecords(next, valueField)
-          const topVal = sorted[0]?.[valueField] ?? -Infinity
+          const sorted = sortRecords(next)
+          const topVal = sorted[0]?.distance ?? -Infinity
           if (topVal > lastTopRef.current && sorted[0]) {
             setNewRecordId(sorted[0].id)
             setTimeout(() => setNewRecordId(null), 5000)
@@ -73,30 +69,31 @@ export function useLeaderboard(kind) {
       cancelled = true
       supabase.removeChannel(channel)
     }
-  }, [table, valueField])
+  }, [])
 
   return { rows, top: rows[0], top5: rows.slice(0, 5), usingSample, newRecordId }
 }
 
-export async function insertRecord(kind, payload) {
-  const table = TABLES[kind]
+export async function insertLongDrive({ name, phone_tail, distance }) {
   if (!supabaseEnabled) {
     throw new Error('Supabase가 설정되지 않았습니다. .env 파일을 확인하세요.')
   }
   const { data, error } = await supabase
-    .from(table)
-    .insert([{ ...payload, created_at: new Date().toISOString() }])
+    .from(LONG_DRIVE_TABLE)
+    .insert([{ name, phone_tail, distance, created_at: new Date().toISOString() }])
     .select()
     .single()
   if (error) throw error
   return data
 }
 
-export async function clearRecords(kind) {
-  const table = TABLES[kind]
+export async function clearLongDrive() {
   if (!supabaseEnabled) {
     throw new Error('Supabase가 설정되지 않았습니다.')
   }
-  const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  const { error } = await supabase
+    .from(LONG_DRIVE_TABLE)
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000')
   if (error) throw error
 }
