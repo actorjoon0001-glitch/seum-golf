@@ -730,6 +730,121 @@ button.danger {
 }
 button.danger:hover { background: #3a1411; }
 
+/* ============= 기록 관리 (수정/삭제) ============= */
+.record-manager {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.record-manager h2 { margin: 0; font-size: 18px; color: var(--gold-2); }
+.rm-hint { color: var(--muted); font-size: 12px; }
+
+.rm-top {
+  background:
+    radial-gradient(280px 80px at 50% 0%, rgba(212,175,55,0.16), transparent 70%),
+    rgba(212,175,55,0.05);
+  border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.rm-top-label { color: var(--muted); font-size: 12px; letter-spacing: 0.18em; }
+.rm-top-body { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 4px; }
+.rm-top-name { color: #fff; font-weight: 700; font-size: 17px; }
+.rm-top-name em { font-style: normal; color: var(--muted); margin-left: 6px; font-size: 13px; }
+.rm-top-val { color: var(--gold-2); font-variant-numeric: tabular-nums; font-weight: 900; font-size: 26px; }
+.rm-top-val em { font-style: normal; color: var(--muted); font-size: 14px; }
+
+.rm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.rm-list::-webkit-scrollbar { width: 6px; }
+.rm-list::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+
+.rm-empty { color: var(--muted); padding: 12px; text-align: center; }
+
+.rm-list li {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.rm-list li.editing {
+  background: rgba(212,175,55,0.06);
+  border-color: rgba(212,175,55,0.35);
+}
+
+.rm-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+.rm-rank { color: var(--gold-2); font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.rm-name { color: #fff; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rm-name em { font-style: normal; color: var(--muted); font-weight: 400; margin-left: 4px; font-size: 12px; }
+.rm-val { color: var(--gold-2); font-weight: 800; font-variant-numeric: tabular-nums; }
+.rm-val em { font-style: normal; color: var(--muted); font-size: 0.75em; margin-left: 2px; }
+.rm-row-actions { display: flex; gap: 4px; grid-column: 4; }
+
+.rm-edit-btn, .rm-del-btn {
+  border: 1px solid var(--line-strong);
+  background: rgba(255,255,255,0.04);
+  color: var(--gold-2);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rm-edit-btn:hover { background: rgba(212,175,55,0.12); }
+.rm-del-btn { color: #ff8a80; border-color: #5a1f1a; }
+.rm-del-btn:hover { background: #2a0e0c; }
+
+.rm-edit { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.rm-edit-grid {
+  display: grid;
+  grid-template-columns: 28px 1.4fr 1fr 1fr;
+  gap: 6px;
+  align-items: center;
+}
+.rm-edit-grid input {
+  padding: 10px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0e0e0e;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  min-width: 0;
+}
+.rm-edit-grid input:focus { border-color: var(--gold); }
+.rm-edit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.rm-edit-actions button {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(180deg, var(--gold-2), var(--gold));
+  color: #1a1200;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 14px;
+}
+.rm-edit-actions button.secondary {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+.rm-edit-actions button:disabled { opacity: 0.6; cursor: progress; }
+
+.rm-more { text-align: center; font-size: 12px; padding: 4px 0; }
+
+@media (max-width: 480px) {
+  .rm-edit-grid { grid-template-columns: 28px 1fr 1fr; }
+  .rm-edit-grid input:nth-child(2) { grid-column: 2 / 4; }
+}
+
 /* ============= 관리자 방송 패널 ============= */
 .broadcast-panel {
   background: linear-gradient(180deg, #18140d, #0e0c08);

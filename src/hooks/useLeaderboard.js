@@ -87,6 +87,24 @@ export async function insertLongDrive({ name, phone_tail, distance }) {
   return data
 }
 
+export async function updateLongDrive(id, fields) {
+  if (!supabaseEnabled) throw new Error('Supabase가 설정되지 않았습니다.')
+  const { data, error } = await supabase
+    .from(LONG_DRIVE_TABLE)
+    .update(fields)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteLongDrive(id) {
+  if (!supabaseEnabled) throw new Error('Supabase가 설정되지 않았습니다.')
+  const { error } = await supabase.from(LONG_DRIVE_TABLE).delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function clearLongDrive() {
   if (!supabaseEnabled) {
     throw new Error('Supabase가 설정되지 않았습니다.')

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLongDriveBoard, insertLongDrive, clearLongDrive } from '../hooks/useLeaderboard.js'
+import { useLongDriveBoard, insertLongDrive, updateLongDrive, deleteLongDrive, clearLongDrive } from '../hooks/useLeaderboard.js'
 import { supabaseEnabled } from '../supabase.js'
 import { broadcast, AUDIO_URL, INTERVAL_MS } from '../broadcast.js'
 
@@ -102,29 +102,119 @@ function LongDriveForm() {
   )
 }
 
-function TopBox() {
+function RecordManager() {
   const board = useLongDriveBoard()
+  const [editId, setEditId] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', phone_tail: '', distance: '' })
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  function startEdit(r) {
+    setEditId(r.id)
+    setEditForm({ name: r.name, phone_tail: r.phone_tail, distance: String(r.distance) })
+    setErr(null)
+  }
+  function cancelEdit() {
+    setEditId(null)
+    setErr(null)
+  }
+  async function saveEdit() {
+    if (!editForm.name.trim()) { setErr('이름을 입력하세요'); return }
+    if (!/^\d{4}$/.test(editForm.phone_tail)) { setErr('연락처 뒷자리 4자리'); return }
+    const dist = Number(editForm.distance)
+    if (!Number.isFinite(dist) || dist <= 0) { setErr('유효한 거리(m)'); return }
+    setBusy(true)
+    setErr(null)
+    try {
+      await updateLongDrive(editId, {
+        name: editForm.name.trim(),
+        phone_tail: editForm.phone_tail,
+        distance: Math.round(dist)
+      })
+      setEditId(null)
+    } catch (e) {
+      setErr('저장 실패: ' + (e?.message || e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function del(r) {
+    if (!confirm(`${r.name} (${r.phone_tail}) · ${r.distance}m 기록을 삭제할까요?`)) return
+    try {
+      await deleteLongDrive(r.id)
+    } catch (e) {
+      alert('삭제 실패: ' + (e?.message || e))
+    }
+  }
+
+  const list = board.rows.slice(0, 30)
   const top = board.top
+
   return (
-    <div className="top-box">
-      <div className="top-box-title">현재 장거리 1위</div>
-      {top ? (
-        <div className="top-box-body">
-          <div className="tb-name">{top.name} <span className="muted">{top.phone_tail}</span></div>
-          <div className="tb-val">{top.distance}<span className="muted"> m</span></div>
+    <div className="record-manager">
+      <h2>기록 관리</h2>
+      <div className="rm-hint">거리(m) 내림차순 · 동점은 먼저 등록한 사람 우선</div>
+
+      {top && (
+        <div className="rm-top">
+          <div className="rm-top-label">현재 장거리 1위</div>
+          <div className="rm-top-body">
+            <span className="rm-top-name">{top.name} <em>{top.phone_tail}</em></span>
+            <span className="rm-top-val">{top.distance}<em> m</em></span>
+          </div>
         </div>
-      ) : (
-        <div className="muted">기록 없음</div>
       )}
-      <ol className="mini-list">
-        {board.top5.map((r, i) => (
-          <li key={r.id}>
-            <span>{i + 1}</span>
-            <span>{r.name}</span>
-            <span>{r.distance} m</span>
+
+      <ul className="rm-list">
+        {list.length === 0 && <li className="rm-empty">기록 없음</li>}
+        {list.map((r, i) => (
+          <li key={r.id} className={editId === r.id ? 'editing' : ''}>
+            {editId === r.id ? (
+              <div className="rm-edit">
+                <div className="rm-edit-grid">
+                  <span className="rm-rank">{i + 1}</span>
+                  <input
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="이름"
+                    autoFocus
+                  />
+                  <input
+                    value={editForm.phone_tail}
+                    onChange={(e) => setEditForm({ ...editForm, phone_tail: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                    placeholder="1234"
+                    inputMode="numeric"
+                  />
+                  <input
+                    value={editForm.distance}
+                    onChange={(e) => setEditForm({ ...editForm, distance: e.target.value.replace(/\D/g, '') })}
+                    placeholder="거리(m)"
+                    inputMode="numeric"
+                  />
+                </div>
+                <div className="rm-edit-actions">
+                  <button onClick={saveEdit} disabled={busy}>{busy ? '저장 중...' : '저장'}</button>
+                  <button className="secondary" onClick={cancelEdit} disabled={busy}>취소</button>
+                </div>
+                {err && <div className="error">{err}</div>}
+              </div>
+            ) : (
+              <div className="rm-row">
+                <span className="rm-rank">{i + 1}</span>
+                <span className="rm-name">{r.name} <em>{r.phone_tail}</em></span>
+                <span className="rm-val">{r.distance} <em>m</em></span>
+                <div className="rm-row-actions">
+                  <button className="rm-edit-btn" onClick={() => startEdit(r)}>수정</button>
+                  <button className="rm-del-btn" onClick={() => del(r)}>삭제</button>
+                </div>
+              </div>
+            )}
           </li>
         ))}
-      </ol>
+      </ul>
+      {board.rows.length > list.length && (
+        <div className="rm-more muted">상위 {list.length}개 표시 중 (총 {board.rows.length}건)</div>
+      )}
     </div>
   )
 }
@@ -267,8 +357,8 @@ export default function Admin() {
 
       <div className="admin-single">
         <LongDriveForm />
-        <TopBox />
-        <button className="danger" onClick={reset}>장거리 기록 초기화</button>
+        <RecordManager />
+        <button className="danger" onClick={reset}>장거리 기록 전체 초기화</button>
         <BroadcastPanel />
       </div>
 
