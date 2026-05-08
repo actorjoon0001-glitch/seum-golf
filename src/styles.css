@@ -27,9 +27,8 @@ button { font-family: inherit; }
 
 /* ============= TV SCREEN ============= */
 .tv-root {
-  position: relative;
-  height: 100vh;
-  width: 100%;
+  position: fixed;
+  inset: 0;
   background:
     radial-gradient(1400px 800px at 50% 0%, rgba(212,175,55,0.18), transparent 60%),
     radial-gradient(1000px 600px at 100% 100%, rgba(212,175,55,0.12), transparent 60%),
@@ -65,6 +64,10 @@ button { font-family: inherit; }
 }
 
 .tv-root > * { position: relative; z-index: 1; }
+.tv-root > .bg-glow { position: absolute; z-index: 0; }
+.tv-header { grid-row: 1; align-self: start; }
+.tv-main { grid-row: 2; align-self: stretch; }
+.tv-footer { grid-row: 3; align-self: end; }
 
 /* Header */
 .tv-header {
