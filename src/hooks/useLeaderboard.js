@@ -71,16 +71,29 @@ export function useLongDriveBoard() {
     }
   }, [])
 
-  return { rows, top: rows[0], top5: rows.slice(0, 5), usingSample, newRecordId }
+  const male = rows.filter((r) => r.gender === 'male')
+  const female = rows.filter((r) => r.gender === 'female')
+  return {
+    rows,
+    top: rows[0],
+    top5: rows.slice(0, 5),
+    male: { top: male[0], top5: male.slice(0, 5) },
+    female: { top: female[0], top5: female.slice(0, 5) },
+    usingSample,
+    newRecordId
+  }
 }
 
-export async function insertLongDrive({ name, phone_tail, distance }) {
+export async function insertLongDrive({ name, phone_tail, gender, distance }) {
   if (!supabaseEnabled) {
     throw new Error('Supabase가 설정되지 않았습니다. .env 파일을 확인하세요.')
   }
+  if (gender !== 'male' && gender !== 'female') {
+    throw new Error('성별(남/여)을 선택하세요.')
+  }
   const { data, error } = await supabase
     .from(LONG_DRIVE_TABLE)
-    .insert([{ name, phone_tail, distance, created_at: new Date().toISOString() }])
+    .insert([{ name, phone_tail, gender, distance, created_at: new Date().toISOString() }])
     .select()
     .single()
   if (error) throw error

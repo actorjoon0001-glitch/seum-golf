@@ -101,7 +101,7 @@ export default function TVScreen() {
     playAnnouncement()
   }
 
-  // 30분 스케줄러
+  // 30초 간격 자동 송출 스케줄러
   useEffect(() => {
     if (!started) return
     const iv = setInterval(() => {
@@ -133,7 +133,49 @@ export default function TVScreen() {
     return () => { off1(); off2() }
   }, [started, playAnnouncement])
 
-  const isNew = ld.newRecordId && ld.top?.id === ld.newRecordId
+  const isNewMale = ld.newRecordId && ld.male.top?.id === ld.newRecordId
+  const isNewFemale = ld.newRecordId && ld.female.top?.id === ld.newRecordId
+
+  function ChampionCard({ kind, label, accent, board, isNew }) {
+    return (
+      <section className={`leader-card hero champion-${accent} ${isNew ? 'flash' : ''}`}>
+        <CornerOrnament pos="tl" />
+        <CornerOrnament pos="tr" />
+        <CornerOrnament pos="bl" />
+        <CornerOrnament pos="br" />
+        <div className="card-head">
+          <div className="card-kind">
+            <span className="dot" /> {kind}
+          </div>
+          <div className="card-prize-line">{label}</div>
+        </div>
+        {board.top ? (
+          <>
+            {isNew && <div className="new-record">★ NEW RECORD ★</div>}
+            <div className="hero-rank">RANK #1</div>
+            <div className="top-name">{maskName(board.top.name)}</div>
+            <div className="top-value">
+              <span className="num">{board.top.distance}</span>
+              <span className="unit">m</span>
+            </div>
+            <div className="record-meta">CURRENT RECORD</div>
+          </>
+        ) : (
+          <div className="empty">기록 대기 중 · 첫 도전자가 1등!</div>
+        )}
+        <ol className="rank-list">
+          {board.top5.slice(1).map((r, i) => (
+            <li key={r.id}>
+              <span className="rank-num">{i + 2}</span>
+              <span className="rank-name">{maskName(r.name)}</span>
+              <span className="rank-val">{r.distance} <em>m</em></span>
+            </li>
+          ))}
+          {board.top5.length < 2 && <li className="rank-empty">도전자를 기다리고 있어요</li>}
+        </ol>
+      </section>
+    )
+  }
 
   return (
     <div className="tv-root">
@@ -159,43 +201,21 @@ export default function TVScreen() {
         </div>
       </header>
 
-      <main className="tv-main tv-main--split">
-        <section className={`leader-card hero ${isNew ? 'flash' : ''}`}>
-          <CornerOrnament pos="tl" />
-          <CornerOrnament pos="tr" />
-          <CornerOrnament pos="bl" />
-          <CornerOrnament pos="br" />
-          <div className="card-head">
-            <div className="card-kind">
-              <span className="dot" /> LONG DRIVE · 장거리 챔피언
-            </div>
-            <div className="card-prize-line">최장 비거리에 도전하세요</div>
-          </div>
-          {ld.top ? (
-            <>
-              {isNew && <div className="new-record">★ NEW RECORD ★</div>}
-              <div className="hero-rank">RANK #1</div>
-              <div className="top-name">{maskName(ld.top.name)}</div>
-              <div className="top-value">
-                <span className="num">{ld.top.distance}</span>
-                <span className="unit">m</span>
-              </div>
-              <div className="record-meta">CURRENT RECORD</div>
-            </>
-          ) : (
-            <div className="empty">기록 대기 중 · 첫 도전자가 1등!</div>
-          )}
-          <ol className="rank-list">
-            {ld.top5.slice(1).map((r, i) => (
-              <li key={r.id}>
-                <span className="rank-num">{i + 2}</span>
-                <span className="rank-name">{maskName(r.name)}</span>
-                <span className="rank-val">{r.distance} <em>m</em></span>
-              </li>
-            ))}
-            {ld.top5.length < 2 && <li className="rank-empty">도전자를 기다리고 있어요</li>}
-          </ol>
-        </section>
+      <main className="tv-main tv-main--triple">
+        <ChampionCard
+          kind="MEN'S LONG DRIVE · 남자 챔피언"
+          label="남자부 최장 비거리"
+          accent="male"
+          board={ld.male}
+          isNew={isNewMale}
+        />
+        <ChampionCard
+          kind="WOMEN'S LONG DRIVE · 여자 챔피언"
+          label="여자부 최장 비거리"
+          accent="female"
+          board={ld.female}
+          isNew={isNewFemale}
+        />
 
         <aside className="prize-card">
           <CornerOrnament pos="tl" />

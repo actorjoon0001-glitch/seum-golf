@@ -32,6 +32,7 @@ function Login({ onOk }) {
 function LongDriveForm() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [gender, setGender] = useState('')
   const [distance, setDistance] = useState('')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
@@ -41,6 +42,10 @@ function LongDriveForm() {
     setMsg(null)
     if (!name.trim() || !phone.trim() || !distance.trim()) {
       setMsg({ type: 'error', text: '모든 항목을 입력하세요' })
+      return
+    }
+    if (gender !== 'male' && gender !== 'female') {
+      setMsg({ type: 'error', text: '성별(남/여)을 선택하세요' })
       return
     }
     if (!/^\d{4}$/.test(phone)) {
@@ -57,10 +62,12 @@ function LongDriveForm() {
       await insertLongDrive({
         name: name.trim(),
         phone_tail: phone.trim(),
+        gender,
         distance: Math.round(num)
       })
       setName('')
       setPhone('')
+      setGender('')
       setDistance('')
       setMsg({ type: 'ok', text: '저장되었습니다' })
     } catch (err) {
@@ -87,6 +94,25 @@ function LongDriveForm() {
           autoComplete="off"
         />
       </label>
+      <div className="gender-row">
+        <span>성별</span>
+        <div className="gender-options">
+          <button
+            type="button"
+            className={`gender-btn ${gender === 'male' ? 'active male' : ''}`}
+            onClick={() => setGender('male')}
+          >
+            남자
+          </button>
+          <button
+            type="button"
+            className={`gender-btn ${gender === 'female' ? 'active female' : ''}`}
+            onClick={() => setGender('female')}
+          >
+            여자
+          </button>
+        </div>
+      </div>
       <label>
         <span>거리 (m)</span>
         <input
@@ -105,13 +131,13 @@ function LongDriveForm() {
 function RecordManager() {
   const board = useLongDriveBoard()
   const [editId, setEditId] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', phone_tail: '', distance: '' })
+  const [editForm, setEditForm] = useState({ name: '', phone_tail: '', gender: '', distance: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
 
   function startEdit(r) {
     setEditId(r.id)
-    setEditForm({ name: r.name, phone_tail: r.phone_tail, distance: String(r.distance) })
+    setEditForm({ name: r.name, phone_tail: r.phone_tail, gender: r.gender || '', distance: String(r.distance) })
     setErr(null)
   }
   function cancelEdit() {
@@ -121,6 +147,7 @@ function RecordManager() {
   async function saveEdit() {
     if (!editForm.name.trim()) { setErr('이름을 입력하세요'); return }
     if (!/^\d{4}$/.test(editForm.phone_tail)) { setErr('연락처 뒷자리 4자리'); return }
+    if (editForm.gender !== 'male' && editForm.gender !== 'female') { setErr('성별을 선택하세요'); return }
     const dist = Number(editForm.distance)
     if (!Number.isFinite(dist) || dist <= 0) { setErr('유효한 거리(m)'); return }
     setBusy(true)
@@ -129,6 +156,7 @@ function RecordManager() {
       await updateLongDrive(editId, {
         name: editForm.name.trim(),
         phone_tail: editForm.phone_tail,
+        gender: editForm.gender,
         distance: Math.round(dist)
       })
       setEditId(null)
@@ -148,22 +176,38 @@ function RecordManager() {
   }
 
   const list = board.rows.slice(0, 30)
-  const top = board.top
+  const maleTop = board.male.top
+  const femaleTop = board.female.top
 
   return (
     <div className="record-manager">
       <h2>기록 관리</h2>
-      <div className="rm-hint">거리(m) 내림차순 · 동점은 먼저 등록한 사람 우선</div>
+      <div className="rm-hint">거리(m) 내림차순 · 동점은 먼저 등록한 사람 우선 · 남/여 부문 분리</div>
 
-      {top && (
-        <div className="rm-top">
-          <div className="rm-top-label">현재 장거리 1위</div>
-          <div className="rm-top-body">
-            <span className="rm-top-name">{top.name} <em>{top.phone_tail}</em></span>
-            <span className="rm-top-val">{top.distance}<em> m</em></span>
-          </div>
+      <div className="rm-top-pair">
+        <div className="rm-top male">
+          <div className="rm-top-label">남자 1위</div>
+          {maleTop ? (
+            <div className="rm-top-body">
+              <span className="rm-top-name">{maleTop.name} <em>{maleTop.phone_tail}</em></span>
+              <span className="rm-top-val">{maleTop.distance}<em> m</em></span>
+            </div>
+          ) : (
+            <div className="rm-top-body muted">기록 없음</div>
+          )}
         </div>
-      )}
+        <div className="rm-top female">
+          <div className="rm-top-label">여자 1위</div>
+          {femaleTop ? (
+            <div className="rm-top-body">
+              <span className="rm-top-name">{femaleTop.name} <em>{femaleTop.phone_tail}</em></span>
+              <span className="rm-top-val">{femaleTop.distance}<em> m</em></span>
+            </div>
+          ) : (
+            <div className="rm-top-body muted">기록 없음</div>
+          )}
+        </div>
+      </div>
 
       <ul className="rm-list">
         {list.length === 0 && <li className="rm-empty">기록 없음</li>}
@@ -185,6 +229,14 @@ function RecordManager() {
                     placeholder="1234"
                     inputMode="numeric"
                   />
+                  <select
+                    value={editForm.gender}
+                    onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                  >
+                    <option value="">성별</option>
+                    <option value="male">남</option>
+                    <option value="female">여</option>
+                  </select>
                   <input
                     value={editForm.distance}
                     onChange={(e) => setEditForm({ ...editForm, distance: e.target.value.replace(/\D/g, '') })}
@@ -201,7 +253,10 @@ function RecordManager() {
             ) : (
               <div className="rm-row">
                 <span className="rm-rank">{i + 1}</span>
-                <span className="rm-name">{r.name} <em>{r.phone_tail}</em></span>
+                <span className="rm-name">
+                  <span className={`rm-gender ${r.gender || ''}`}>{r.gender === 'female' ? '여' : r.gender === 'male' ? '남' : '?'}</span>
+                  {r.name} <em>{r.phone_tail}</em>
+                </span>
                 <span className="rm-val">{r.distance} <em>m</em></span>
                 <div className="rm-row-actions">
                   <button className="rm-edit-btn" onClick={() => startEdit(r)}>수정</button>
