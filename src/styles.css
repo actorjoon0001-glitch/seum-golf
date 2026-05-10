@@ -248,23 +248,23 @@ button { font-family: inherit; }
 
 .empty { color: var(--muted); font-size: clamp(20px, 2vw, 32px); padding: 24px 0; }
 
-.rank-list { list-style: none; padding: 0; margin: auto 0 0; display: flex; flex-direction: column; gap: 8px; }
+.rank-list { list-style: none; padding: 0; margin: auto 0 0; display: flex; flex-direction: column; gap: clamp(10px, 1vw, 16px); }
 .rank-list li {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: clamp(60px, 5vw, 90px) 1fr auto;
   align-items: center;
-  padding: clamp(8px, 0.9vw, 14px) clamp(12px, 1.2vw, 18px);
+  padding: clamp(14px, 1.4vw, 22px) clamp(16px, 1.6vw, 26px);
   background: linear-gradient(90deg, rgba(212,175,55,0.06), rgba(255,255,255,0.02));
   border: 1px solid rgba(212,175,55,0.12);
-  border-radius: 12px;
-  font-size: clamp(15px, 1.3vw, 22px);
+  border-radius: 14px;
+  font-size: clamp(26px, 2.6vw, 44px);
 }
 .rank-list li.rank-empty {
   grid-template-columns: 1fr; text-align: center; color: var(--muted);
   background: transparent; border-style: dashed;
 }
 .rank-num { color: var(--gold-2); font-weight: 800; font-variant-numeric: tabular-nums; }
-.rank-name { color: #fff; font-weight: 600; }
+.rank-name { color: #fff; font-weight: 800; }
 .rank-val { color: var(--gold-2); font-variant-numeric: tabular-nums; font-weight: 800; }
 .rank-val em { font-style: normal; color: var(--muted); font-size: 0.7em; margin-left: 2px; }
 
