@@ -548,11 +548,20 @@ button { font-family: inherit; }
 
 /* ============= 안내방송 송출 오버레이 ============= */
 .announcement-overlay {
-  position: fixed;
-  top: clamp(80px, 8vh, 140px);
-  right: clamp(16px, 1.6vw, 32px);
+  position: fixed !important;
+  inset: auto !important;
+  top: clamp(80px, 8vh, 140px) !important;
+  right: clamp(16px, 1.6vw, 32px) !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: auto !important;
   z-index: 150;
   pointer-events: none;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: block !important;
   animation: fadeIn 0.4s ease-out;
 }
 .announcement-card {
