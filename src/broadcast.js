@@ -1,7 +1,7 @@
 import { supabase, supabaseEnabled } from './supabase.js'
 
 export const AUDIO_URL = '/audio/notice-golf.mp3'
-export const INTERVAL_MS = 30 * 1000
+export const INTERVAL_MS = 60 * 1000
 
 const KEY_LAST = 'seum.broadcast.lastAt'
 const KEY_ENABLED = 'seum.broadcast.enabled'

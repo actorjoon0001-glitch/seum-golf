@@ -101,7 +101,7 @@ export default function TVScreen() {
     playAnnouncement()
   }
 
-  // 30초 간격 자동 송출 스케줄러
+  // 1분 간격 자동 송출 스케줄러
   useEffect(() => {
     if (!started) return
     const iv = setInterval(() => {
@@ -265,10 +265,10 @@ export default function TVScreen() {
           <div className="start-modal-card">
             <div className="start-modal-icon">🔊</div>
             <h2>안내방송 시작</h2>
-            <p>박람회 현장 안내방송을 30초마다 자동으로 재생합니다.<br/>
+            <p>박람회 현장 안내방송을 1분마다 자동으로 재생합니다.<br/>
             브라우저 정책상 처음 1회 클릭이 필요합니다.</p>
             <button className="start-btn" onClick={handleStart}>방송 시작</button>
-            <p className="start-modal-hint">버튼을 누르면 첫 방송이 즉시 송출되고,<br/>이후 30초마다 자동으로 반복됩니다.</p>
+            <p className="start-modal-hint">버튼을 누르면 첫 방송이 즉시 송출되고,<br/>이후 1분마다 자동으로 반복됩니다.</p>
           </div>
         </div>
       )}

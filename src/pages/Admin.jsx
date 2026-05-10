@@ -346,7 +346,7 @@ function BroadcastPanel() {
   return (
     <div className="broadcast-panel">
       <h2>🔊 안내방송</h2>
-      <p className="bp-desc">30초마다 자동 재생 · TV 화면에서 "방송 시작" 1회 클릭 필수</p>
+      <p className="bp-desc">1분마다 자동 재생 · TV 화면에서 "방송 시작" 1회 클릭 필수</p>
 
       <label className="toggle-row">
         <span>안내방송 자동 재생</span>
