@@ -38,5 +38,15 @@ create policy "anon read long_drive"
 create policy "anon write long_drive"
   on public.long_drive_records for all using (true) with check (true);
 
--- Realtime 활성화
-alter publication supabase_realtime add table public.long_drive_records;
+-- Realtime 활성화 (이미 등록되어 있으면 건너뜀)
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'long_drive_records'
+  ) then
+    execute 'alter publication supabase_realtime add table public.long_drive_records';
+  end if;
+end $$;
